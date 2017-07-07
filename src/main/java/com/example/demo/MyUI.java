@@ -22,30 +22,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 @SpringUI
 public class MyUI extends UI{
 
+    
     @Autowired
-    private  StudentRepo studentRepo;
+    private  StudentGridView sgv;
     @Override
     protected void init(VaadinRequest request) {
         VerticalLayout vl = new VerticalLayout();
         
-        TextField tf = new TextField("Enter id");
-        TextField tf1 = new TextField("Enter name");
-        Button save = new Button("Save");
-        save.addClickListener(e -> {
-            studentRepo.save(new Student(Long.parseLong(tf.getValue()), tf1.getValue()));
-                    });
-        //studentRepo.save(new Student(1l, "rizwan"));
-        Button b = new Button("count");
-        
-        b.addClickListener(e -> {
-            Notification.show(studentRepo.count() + "");
-        });
-                
-        Button update = new Button("update 1");
-        update.addClickListener(e -> {
-        studentRepo.save(new Student(1l, "Rizwan"));
-        });
-        vl.addComponents(tf, tf1, save, b, update);
+ 
+        vl.addComponents(sgv);
         setContent(vl);
     }
     
