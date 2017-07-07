@@ -22,7 +22,11 @@ import com.vaadin.ui.components.grid.HeaderCell;
 import com.vaadin.ui.components.grid.HeaderRow;
 import com.vaadin.ui.themes.ValoTheme;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 
@@ -42,17 +46,21 @@ public class StudentGridView extends HorizontalLayout {
     private Button save;
     private Button clear;
     private Student student;
-    private Grid<Student> grid;
-    private List<Student> list = new ArrayList<>();
+    private Grid<Student> grid = new Grid<>();
+    private List<Student> list=new ArrayList<>();
+    
 
     @Autowired(required = true)
     private StudentRepo studentRepo;
-    private Binder<Student> binder;
+    
+    @PostConstruct
+    private void init()
+    {
+       grid.setItems(studentRepo.findAll()); 
+    }
 
     public StudentGridView() {
-
-        binder = new Binder<>(Student.class);
-
+        
         form = new FormLayout();
         form.setCaption("<h3>Enter Customer Detail...</h3>");
         form.setCaptionAsHtml(true);
@@ -81,6 +89,7 @@ public class StudentGridView extends HorizontalLayout {
             student=new Student(Long.parseLong(id.getValue()), name.getValue());
             list.add(student);
             studentRepo.save(student);
+            
 
         });
 

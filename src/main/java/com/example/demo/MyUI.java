@@ -30,7 +30,6 @@ public class MyUI extends UI{
     protected void init(VaadinRequest request) {
         VerticalLayout vl = new VerticalLayout();
         
-
         vl.addComponents(studentGridView);
         setContent(vl);
     }
