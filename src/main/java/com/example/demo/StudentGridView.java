@@ -6,11 +6,11 @@
 package com.example.demo;
 
 import com.vaadin.data.Binder;
+import com.vaadin.data.ValidationException;
+import com.vaadin.data.provider.DataProvider;
 import com.vaadin.icons.VaadinIcons;
-import com.vaadin.server.Sizeable.Unit;
 import com.vaadin.shared.ui.ValueChangeMode;
 import com.vaadin.spring.annotation.SpringComponent;
-import com.vaadin.spring.annotation.SpringUI;
 import com.vaadin.spring.annotation.UIScope;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.FormLayout;
@@ -21,20 +21,17 @@ import com.vaadin.ui.TextField;
 import com.vaadin.ui.components.grid.HeaderCell;
 import com.vaadin.ui.components.grid.HeaderRow;
 import com.vaadin.ui.themes.ValoTheme;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import javax.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 /**
  *
  * @author Chaudhary
  */
-
 @UIScope
 @SpringComponent
 
@@ -42,54 +39,88 @@ public class StudentGridView extends HorizontalLayout {
 
     private FormLayout form;
     private TextField name;
-    private TextField id;
+    private TextField email;
     private Button save;
     private Button clear;
     private Student student;
-    private Grid<Student> grid = new Grid<>();
-    private List<Student> list=new ArrayList<>();
+    private Grid<Student> grid;
+    private List<Student> list;
     
+
+    private Binder<Student> binder;
 
     @Autowired(required = true)
     private StudentRepo studentRepo;
+
     
-    @PostConstruct
-    private void init()
-    {
-       grid.setItems(studentRepo.findAll()); 
-    }
 
     public StudentGridView() {
+        grid = new Grid<>();
+        name = new TextField("Name :");
+        email = new TextField();
         
+        
+        grid.setDataProvider(
+        
+                (sortOrders, offset, limit) ->
+                        
+            studentRepo.findAll(new PageRequest(offset/limit, limit)).getContent().stream(),
+                
+            () -> (int)studentRepo.count()
+        );
+//      DataProvider<Student, Void> dataProvider= DataProvider.fromCallbacks(
+//                
+//                query -> {
+//                    // The index of the first item to load
+//                    int offset = query.getOffset();
+//
+//                    // The number of items to load
+//                    int limit = query.getLimit();
+//                        
+//                   return studentRepo.findAll(new PageRequest(offset, limit)).getContent().stream();
+//                    
+//                  },
+//                  // Second callback fetches the number of items for a query
+//                  query -> studentRepo.count()
+//                );
+//        
+//        grid.setDataProvider(dataProvider);
+
+        student = new Student();
+        binder = new Binder<>(Student.class);
+        binder.bindInstanceFields(this);
+        binder.readBean(student);
+
         form = new FormLayout();
         form.setCaption("<h3>Enter Customer Detail...</h3>");
         form.setCaptionAsHtml(true);
-        form.setSizeUndefined();
 
-        name = new TextField("Name :");
         name.setRequiredIndicatorVisible(true);
         name.setIcon(VaadinIcons.USER);
-        name.setWidth("50%");
+//        name.setWidth("50%");
         name.setPlaceholder("Name...");
 
-        id = new TextField();
-        id.setRequiredIndicatorVisible(true);
-        id.setCaption("Id :");
-        id.setWidth("50%");
-        id.setIcon(VaadinIcons.PHONE);
-        id.setPlaceholder("Id...");
-        
-        
-        
-        
+        email.setRequiredIndicatorVisible(true);
+        email.setCaption("Email :");
+//        email.setWidth("50%");
+        email.setIcon(VaadinIcons.MAILBOX);
+        email.setPlaceholder("Email...");
+
         save = new Button("Save");
         save.setStyleName(ValoTheme.BUTTON_SMALL);
         save.setDescription("This Button saves and Update Customer Detail");
+
         save.addClickListener((event) -> {
-            student=new Student(Long.parseLong(id.getValue()), name.getValue());
-            list.add(student);
+
+            try {
+                binder.writeBean(student);
+
+            } catch (ValidationException ex) {
+                ///TODo something...
+            }
+
             studentRepo.save(student);
-            
+            clear();
 
         });
 
@@ -98,19 +129,35 @@ public class StudentGridView extends HorizontalLayout {
         clear.setDescription("Clear all Field to their Default Values(Empty)");
         clear.addClickListener(e -> {
             clear();
-
+            Notification.show("Clear Done", Notification.Type.TRAY_NOTIFICATION);
         });
 
-        form.addComponents(id, name, new HorizontalLayout(clear, save));
-        form.setMargin(true);
-//        form.setSizeFull();
+        form.addComponents(name, email, new HorizontalLayout(clear, save));
 
-        grid = new Grid(Student.class);
         grid.setCaption("<h3>Enter Customer Detail...</h3>");
         grid.setCaptionAsHtml(true);
-        grid.setItems(list);
         grid.setStyleName(ValoTheme.LAYOUT_WELL);
-        grid.setWidth(this.getWidth(), Unit.PERCENTAGE);
+//        grid.setWidth(this.getWidth(), Unit.PERCENTAGE);
+        TextField editname = new TextField();
+        grid.getEditor().setEnabled(true);
+        grid.setSelectionMode(Grid.SelectionMode.SINGLE);
+        grid.addColumn(Student::getId)
+                .setCaption("Id")
+                .setId("id");
+        grid.addColumn(Student::getName)
+                .setEditorComponent(new TextField(), Student::setName)
+                .setCaption("Name")
+                .setId("name");
+        grid.addColumn(Student::getEmail)
+                .setEditorComponent(editname, Student::setEmail)
+                .setCaption("Email")
+                .setId("email");
+
+        grid.getEditor().addSaveListener(e -> {
+            student = e.getBean();
+            studentRepo.save(student);
+        });
+//        grid.setWidth("50%");
 
         HeaderRow filterRow = grid.appendHeaderRow();
         HeaderCell filternamecell = filterRow.getCell("name");
@@ -118,29 +165,19 @@ public class StudentGridView extends HorizontalLayout {
         filter.setValueChangeMode(ValueChangeMode.LAZY);
         filter.setPlaceholder("Filter name...");
         filternamecell.setComponent(filter);
-//        grid.setHeight();
-        List names = new ArrayList();
         filter.addValueChangeListener(e -> {
-
-            names.clear();
-            for (int i = 0; i < list.size(); i++) {
-
-                names.add(list.get(i).getName());
-            }
-            Notification.show(names.toString());
 
         });
 
         addComponents(grid, form);
         setSizeFull();
-        setExpandRatio(grid,1);
 
     }
 
     ///Clear all Field to their Default values mean Empty....
     void clear() {
         name.setValue("");
-        id.setValue("");
+        email.setValue("");
 
     }
 

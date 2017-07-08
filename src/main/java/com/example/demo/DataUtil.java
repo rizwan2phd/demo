@@ -5,22 +5,38 @@
  */
 package com.example.demo;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  *
  * @author Moieen
  */
 public class DataUtil {
-    
+    List<Student> list;
     public DataUtil(){
         
     }
-    public static <T> void addAll(Collection<T> collection, Iterator<T> iterator) {
-    while (iterator.hasNext()) {
-        collection.add(iterator.next());
+    
+        //Return list of student from database
+     public List<Student> getUpdate(StudentRepo studentRepo){
+                list=studentRepo.findAll();
+                
+        return list;
     }
-}
+    
+    public List<Student> findAll(int offset, int limit){
+        
+            
+        
+        return   list.subList(offset, (offset + limit));
+        
+    }
+    
+    public int count() {
+        return list.size();
+    }
     
 }

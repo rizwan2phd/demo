@@ -22,15 +22,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 @SpringUI
 public class MyUI extends UI{
 
+    
     @Autowired
-    private  StudentRepo studentRepo;
-    @Autowired
-    private StudentGridView studentGridView;
+    private  StudentGridView sgv;
     @Override
     protected void init(VaadinRequest request) {
         VerticalLayout vl = new VerticalLayout();
         
-        vl.addComponents(studentGridView);
+ 
+        vl.addComponents(sgv);
         setContent(vl);
     }
     
